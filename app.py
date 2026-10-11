@@ -110,15 +110,27 @@ init_db()
 
 
 # ---------------------------------------------------------
-# 3. サイドバー: API設定・バックアップ
+# 3. API設定・バックアップ (Secrets自動取得対応)
 # ---------------------------------------------------------
 st.sidebar.title("⚙️ 設定")
 
-# APIキー入力
+# StreamlitのSecretsから自動取得を試みる
+active_api_key = None
+try:
+    if "GEMINI_API_KEY" in st.secrets:
+        active_api_key = st.secrets["GEMINI_API_KEY"]
+except Exception:
+    pass
+
+# サイドバーでの手動入力（Secrets未設定時や上書き用、初期値にSecretsを設定）
 api_key_input = st.sidebar.text_input(
-    "Gemini API Key", type="password", placeholder="AIzaSy..."
+    "Gemini API Key",
+    type="password",
+    value=active_api_key if active_api_key else "",
+    placeholder="AIzaSy...",
 )
-active_api_key = api_key_input.strip() if api_key_input else None
+if api_key_input:
+    active_api_key = api_key_input.strip()
 
 if active_api_key:
     try:
@@ -133,7 +145,9 @@ if active_api_key:
         client = None
 else:
     client = None
-    st.sidebar.info("💡 ラベルAI解析機能を使うにはAPIキーを入力してください。")
+    st.sidebar.info(
+        "💡 StreamlitのSecrets設定、またはサイドバーにAPIキーを入力してください。"
+    )
 
 st.sidebar.markdown("---")
 st.sidebar.subheader("📦 データバックアップ")
@@ -154,7 +168,6 @@ if os_data := export_db_json():
         file_name=f"sake_brix_backup_{datetime.date.today()}.json",
         mime="application/json",
     )
-
 # ---------------------------------------------------------
 # 4. メイン画面・ナビゲーション
 # ---------------------------------------------------------
